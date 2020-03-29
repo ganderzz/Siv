@@ -19,4 +19,4 @@ siv ./example
 
 - posts: contains all markdown posts/content/entries
 - templates: contains the files used by posts (uses mustache templating). Currently the only template supported is 'posts.html' to layout posts
-  - partials: used to break use html, and be maintainable
+  - partials

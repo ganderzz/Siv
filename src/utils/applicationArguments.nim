@@ -4,6 +4,8 @@ type ApplicationArguments* = ref object
   postsDir*: string
   templatesDir*: string
   outputDir*: string
+  postsTemplate*: string
+  partialsDir*: string
 
 const postsDirName = "posts"
 const outputDirName = "dist"
@@ -26,3 +28,5 @@ proc newApplicationArguments*(cwd: string): ApplicationArguments =
     raise newException(ValueError, fmt"Could not find a `templates` directory ({result.templatesDir}).")
 
   result.outputDir = joinPath(cwd, outputDirName)
+  result.postsTemplate = joinPath(result.templatesDir, "post.html")
+  result.partialsDir = joinPath(result.templatesDir, "partials")
