@@ -3,10 +3,14 @@ import strutils, sequtils
 
 type MdObject* = ref object
   meta*: seq[tuple[key: string, value: string]]
+  originalFilename: string
   filename: string
   content*: string
 
-method getOriginalFileName*(self: MdObject): string {.base.} =
+method getOriginalFilename*(self: MdObject): string {.base.} =
+  return self.originalFilename
+
+method getFilename*(self: MdObject): string {.base.} =
   return self.filename
 
 proc formatMetaValue(input: string): string =
@@ -15,7 +19,9 @@ proc formatMetaValue(input: string): string =
 proc newMarkdownObject*(filename: string, markdown: TaintedString): MdObject =
   new result
 
-  result.filename = filename
+  result.filename = filename.replace(" ", "-")
+  result.originalFilename = filename
+  result.meta.add((key: "url", value: "posts/" & result.filename & ".html"))
 
   if markdown.startsWith("---"):
     let line = markdown.split("---")
