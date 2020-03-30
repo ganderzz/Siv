@@ -1,3 +1,5 @@
+![CI](https://github.com/ganderzz/Siv/workflows/CI/badge.svg?branch=master)
+
 # Siv
 
 Siv is an opinionated, static website generator. The goal of siv is to be simple, and fast. Conventions have been setup to reduce complexities.

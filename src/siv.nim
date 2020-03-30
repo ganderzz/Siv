@@ -1,7 +1,7 @@
-import os, asyncfile, asyncdispatch, strformat, markdown, strutils, moustachu, utils/markdownUtils,
+import os, asyncfile, asyncdispatch, times, strformat, markdown, strutils, moustachu, utils/markdownUtils,
     utils/applicationArguments
 
-proc generateAllPostsData(postsDir: string): Future[seq[MdObject]] {.async.} =
+proc generatePostContextsAsync(postsDir: string): Future[seq[Context]] {.async.} =
   for kind, filePath in walkDir(postsDir):
     if kind == PathComponent.pcFile:
       let (_, fileName, extension) = splitFile(filePath)
@@ -12,26 +12,27 @@ proc generateAllPostsData(postsDir: string): Future[seq[MdObject]] {.async.} =
       let file = openAsync(filePath)
 
       let fileContents = await file.readAll()
-      result.add(newMarkdownObject(fileName, fileContents))
+      let post = newMarkdownObject(fileName, fileContents)
+      var mustacheContext = newContext(post.meta)
+
+      mustacheContext["content"] = markdown(post.content, config = initGfmConfig())
+
+      result.add(mustacheContext)
       file.close()
 
 proc main(args: ApplicationArguments) {.async.} =
+  # Create output directories if they don't exist
   discard existsOrCreateDir(args.outputDir)
   discard existsOrCreateDir(args.templatesOutputDir)
 
-  let posts = await generateAllPostsData(args.postsDir)
-  var postsMustacheContext: seq[Context] = @[]
+  let postsMustacheContext = await generatePostContextsAsync(args.postsDir)
 
   # Generate posts
-  for post in posts:
-    var mustacheContext = newContext(post.meta)
+  for postContext in postsMustacheContext:
+    let html = renderFile(args.postsTemplate, postContext, args.partialsDir)
+    let filename = postContext["filename"]
 
-    mustacheContext["content"] = markdown(post.content, config = initGfmConfig())
-
-    let html = renderFile(args.postsTemplate, mustacheContext, args.partialsDir)
-    postsMustacheContext.add(mustacheContext)
-
-    writeFile(joinPath(args.templatesOutputDir, fmt"{post.getFilename()}.html"), html)
+    writeFile(joinPath(args.templatesOutputDir, fmt"{filename}.html"), html)
 
   # Generate pages
   for kind, filePath in walkDir(args.pagesDir):
@@ -53,9 +54,10 @@ when isMainModule:
   if paramCount() < 1:
     raise newException(ValueError, "Not enough arguments provided.")
 
+  let durationStart = cpuTime()
   let args = newApplicationArguments(paramStr(1))
 
   waitFor main(args)
 
-  echo "Siv :=: Complete!"
+  echo fmt"Siv completed in {cpuTime() - durationStart}s"
   

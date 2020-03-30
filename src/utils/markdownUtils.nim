@@ -1,7 +1,7 @@
 
 import strutils, sequtils
 
-type MdObject* = ref object
+type MdObject* = object
   meta*: seq[tuple[key: string, value: string]]
   originalFilename: string
   filename: string
@@ -13,12 +13,10 @@ method getOriginalFilename*(self: MdObject): string {.base.} =
 method getFilename*(self: MdObject): string {.base.} =
   return self.filename
 
-proc formatMetaValue(input: string): string =
-  return strip(strip(input, chars = Whitespace), chars = {'"', '\''})
+template formatMetaValue(input: string): string =
+  strip(strip(input, chars = Whitespace), chars = {'"', '\''})
 
 proc newMarkdownObject*(filename: string, markdown: TaintedString): MdObject =
-  new result
-
   result.filename = filename.replace(" ", "-")
   result.originalFilename = filename
   result.meta.add((key: "url", value: "posts/" & result.filename & ".html"))
