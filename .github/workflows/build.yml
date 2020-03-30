@@ -30,11 +30,11 @@ jobs:
 
     # Runs a single command using the runners shell
     - name: build
-      run: nimble build -d:release --threads:on
+      run: nim c -d:release --threads:on ./src/siv.nim
       
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: siv
+        files: src/siv
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
