@@ -1,7 +1,7 @@
-import os, asyncfile, asyncdispatch, times, strformat, markdown, strutils, moustachu, utils/markdownUtils,
+import os, asyncfile, asyncdispatch, times, sequtils, strformat, markdown, strutils, moustachu, utils/markdownUtils,
     utils/applicationArguments
 
-proc generatePostContextsAsync(postsDir: string): Future[seq[Context]] {.async.} =
+proc generatePostContextsAsync(postsDir: string): Future[seq[tuple[filename: string, context: Context]]] {.async.} =
   for kind, filePath in walkDir(postsDir):
     if kind == PathComponent.pcFile:
       let (_, fileName, extension) = splitFile(filePath)
@@ -17,7 +17,7 @@ proc generatePostContextsAsync(postsDir: string): Future[seq[Context]] {.async.}
 
       mustacheContext["content"] = markdown(post.content, config = initGfmConfig())
 
-      result.add(mustacheContext)
+      result.add((filename: post.getFilename(), context: mustacheContext))
       file.close()
 
 proc main(args: ApplicationArguments) {.async.} =
@@ -25,14 +25,14 @@ proc main(args: ApplicationArguments) {.async.} =
   discard existsOrCreateDir(args.outputDir)
   discard existsOrCreateDir(args.templatesOutputDir)
 
-  let postsMustacheContext = await generatePostContextsAsync(args.postsDir)
+  let posts = await generatePostContextsAsync(args.postsDir)
+  let postsContext = posts.mapIt(it.context)
 
   # Generate posts
-  for postContext in postsMustacheContext:
-    let html = renderFile(args.postsTemplate, postContext, args.partialsDir)
-    let filename = postContext["filename"]
+  for post in posts:
+    let html = renderFile(args.postsTemplate, post.context, args.partialsDir)
 
-    writeFile(joinPath(args.templatesOutputDir, fmt"{filename}.html"), html)
+    writeFile(joinPath(args.templatesOutputDir, fmt"{post.filename}.html"), html)
 
   # Generate pages
   for kind, filePath in walkDir(args.pagesDir):
@@ -43,7 +43,7 @@ proc main(args: ApplicationArguments) {.async.} =
         continue
 
       var mustacheContext = newContext({ "filename": fileName })
-      mustacheContext["posts"] = postsMustacheContext 
+      mustacheContext["posts"] = postsContext
 
       let html = renderFile(filePath, mustacheContext, args.partialsDir)
 

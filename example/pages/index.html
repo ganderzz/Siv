@@ -1,14 +1,11 @@
 {{> header}}
 
-<div>{{filename}}</div>
+<h1 class="title">{{filename}}</h1>
 
-<ul>
-  {{# posts}}
-  <li>
-    <a href="{{url}}"><strong>{{title}}</strong></a>
-  </li>
-  {{/ posts}} {{^ posts}}
-  <li>No posts..</li>
-  {{/ posts}}
-</ul>
-{{> footer}}
+{{# posts}}
+<div class="box">
+  <a href="{{url}}"><strong>{{title}}</strong></a>
+</div>
+{{/ posts}} {{^ posts}}
+<div>No posts..</div>
+{{/ posts}} {{> footer}}
