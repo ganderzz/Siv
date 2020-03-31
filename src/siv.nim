@@ -1,7 +1,7 @@
 import os, asyncfile, asyncdispatch, times, sequtils, strformat, markdown, strutils, moustachu, utils/markdownUtils,
     utils/applicationArguments
 
-proc generatePostContextsAsync(postsDir: string): Future[seq[tuple[filename: string, context: Context]]] {.async.} =
+proc generatePostContextsAsync(postsDir: string, args: ApplicationArguments): Future[seq[Context]] {.async.} =
   for kind, filePath in walkDir(postsDir):
     if kind == PathComponent.pcFile:
       let (_, fileName, extension) = splitFile(filePath)
@@ -17,22 +17,20 @@ proc generatePostContextsAsync(postsDir: string): Future[seq[tuple[filename: str
 
       mustacheContext["content"] = markdown(post.content, config = initGfmConfig())
 
-      result.add((filename: post.getFilename(), context: mustacheContext))
+      result.add(mustacheContext)
+      let html = renderFile(args.postsTemplate, mustacheContext, args.partialsDir)
+
+      writeFile(joinPath(args.templatesOutputDir, fmt"{post.getFilename()}.html"), html)
+
       file.close()
+
 
 proc main(args: ApplicationArguments) {.async.} =
   # Create output directories if they don't exist
   discard existsOrCreateDir(args.outputDir)
   discard existsOrCreateDir(args.templatesOutputDir)
 
-  let posts = await generatePostContextsAsync(args.postsDir)
-  let postsContext = posts.mapIt(it.context)
-
-  # Generate posts
-  for post in posts:
-    let html = renderFile(args.postsTemplate, post.context, args.partialsDir)
-
-    writeFile(joinPath(args.templatesOutputDir, fmt"{post.filename}.html"), html)
+  let postsContext = await generatePostContextsAsync(args.postsDir, args)
 
   # Generate pages
   for kind, filePath in walkDir(args.pagesDir):

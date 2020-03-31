@@ -33,7 +33,7 @@ proc newMarkdownObject*(filename: string, markdown: TaintedString): MdObject =
     let splitMetadata = line[1].splitLines().filterIt(it != "")
 
     for item in splitMetadata:
-      let splitItem = item.split(":")
+      let splitItem = item.split(":", 1)
 
       if len(splitItem) != 2:
         raise newException(ValueError, "Could not parse metadata. Type malformed.")
